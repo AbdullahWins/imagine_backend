@@ -57,17 +57,17 @@ async function run() {
         return;
       }
       console.log("file recieved");
-      const filePath = req.file.path; // Path to the temporarily stored file
-      const fileName = req.file.originalname; // Original name of the uploaded file
+      const filePath = req.file.path;
+      const fileName = req.file.originalname; 
 
-      const destination = "uploads/" + fileName; // Destination path in Firebase Storage
+      const destination = "uploads/" + fileName;
       console.log("starting upload");
       bucket.upload(
         filePath,
         {
           destination: destination,
           metadata: {
-            contentType: req.file.mimetype, // Set the content type based on the uploaded file
+            contentType: req.file.mimetype,
           },
         },
         (err, uploadedFile) => {
