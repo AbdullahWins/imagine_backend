@@ -54,42 +54,56 @@ async function run() {
       const images = await cursor.toArray();
       res.send(images);
     });
-    app.post("/images", upload.single("image"), (req, res) => {
-      if (!req.file) {
-        res.status(400).json({ error: "No file uploaded" });
-        return;
-      }
-      console.log("file recieved");
-      const filePath = req.file.path;
-      const fileName = req.file.originalname;
 
-      const destination = "uploads/" + fileName;
-      console.log("starting upload");
-      bucket.upload(
-        filePath,
-        {
-          destination: destination,
-          metadata: {
-            contentType: req.file.mimetype,
-          },
-        },
-        (err, uploadedFile) => {
-          if (err) {
-            console.error("Error uploading file:", err);
-            res.status(500).json({ error: "Failed to upload file" });
-            return;
-          }
-
-          const imageUrl = uploadedFile.publicUrl();
-          console.log(imageUrl);
-
-          // Delete the temporarily stored file
-          fs.unlinkSync(filePath);
-          res.json({ imageUrl: imageUrl });
+    app.post("/images", upload.single("image"), async (req, res) => {
+      try {
+        if (!req.file) {
+          return res.status(400).json({ error: "No file uploaded" });
         }
-      );
-      console.log("upload finished");
+        console.log("file received");
+        const filePath = req.file.path;
+        const fileName = req.file.originalname;
+        const { author, city, state, zip } = req.body;
+
+        const destination = "uploads/" + fileName;
+        console.log("starting upload");
+        bucket.upload(
+          filePath,
+          {
+            destination: destination,
+            metadata: {
+              contentType: req.file.mimetype,
+            },
+          },
+          (err, uploadedFile) => {
+            if (err) {
+              console.error("Error uploading file:", err);
+              return res.status(500).json({ error: "Failed to upload file" });
+            }
+
+            const fileUrl = uploadedFile.publicUrl();
+            // Delete the temporarily stored file
+            fs.unlinkSync(filePath);
+            console.log(fileUrl);
+            const processedData = { author, city, state, zip, fileUrl };
+            imagesCollection
+              .insertOne(processedData)
+              .then((result) => {
+                console.log("upload finished");
+                res.json(result);
+              })
+              .catch((error) => {
+                console.error("Error inserting data:", error);
+                res.status(500).json({ error: "Failed to insert data" });
+              });
+          }
+        );
+      } catch (error) {
+        console.error("Error processing request:", error);
+        res.status(500).json({ error: "An error occurred" });
+      }
     });
+
     // Main error and final log
   } catch (error) {
     console.log(error);
