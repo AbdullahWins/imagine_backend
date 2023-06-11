@@ -1,5 +1,5 @@
 // firebaseConfig.js
-const firebaseConfig = {
+const serviceAccount = {
   type: process.env.FIREBASE_TYPE,
   project_id: process.env.FIREBASE_PROJECT_ID,
   private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
@@ -13,4 +13,4 @@ const firebaseConfig = {
   universe_domain: process.env.FIREBASE_UNIVERSE_DOMAIN,
 };
 
-export default firebaseConfig;
+module.exports = serviceAccount;

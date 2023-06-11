@@ -9,13 +9,16 @@ const { MongoClient, ObjectId, ServerApiVersion } = require("mongodb");
 require("dotenv").config();
 
 const admin = require("firebase-admin");
-const serviceAccount = require("./firebase/firebase.json");
-
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
+  credential: admin.credential.cert({
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+  }),
   storageBucket: process.env.FIRE_STORAGE_BUCKET_NAME,
 });
-//firebase storage bucket
+
+// Firebase storage bucket
 const bucket = admin.storage().bucket();
 
 app.use(cors());
@@ -58,7 +61,7 @@ async function run() {
       }
       console.log("file recieved");
       const filePath = req.file.path;
-      const fileName = req.file.originalname; 
+      const fileName = req.file.originalname;
 
       const destination = "uploads/" + fileName;
       console.log("starting upload");
@@ -85,10 +88,9 @@ async function run() {
           res.json({ imageUrl: imageUrl });
         }
       );
-
       console.log("upload finished");
     });
-    //main error and final log
+    // Main error and final log
   } catch (error) {
     console.log(error);
   } finally {
