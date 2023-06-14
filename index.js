@@ -19,7 +19,7 @@ const client = new MongoClient(uri, {
   serverApi: ServerApiVersion.v1,
 });
 
-async function run() {
+const RunTheServer = async () => {
   try {
     const usersCollection = client.db("database").collection("usersCollection");
     const imagesCollection = client
@@ -75,8 +75,8 @@ async function run() {
   } finally {
     console.log("computation completed");
   }
-}
-run().catch((error) => console.log(error));
+};
+RunTheServer().catch((error) => console.log(error));
 
 app.get("/", (req, res) => {
   res.send("Hello and Welcome!!!");
