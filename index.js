@@ -1,22 +1,13 @@
 const express = require("express");
+require("dotenv").config();
 const cors = require("cors");
 const app = express();
 const fs = require("fs");
 const multer = require("multer");
 const upload = multer({ dest: "uploads/" }); // Temporarily store the uploaded file
 const port = process.env.port || 5000;
-const { MongoClient, ObjectId, ServerApiVersion } = require("mongodb");
-require("dotenv").config();
-
-const admin = require("firebase-admin");
-const serviceAccount = require("./firebase/firebase.json");
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  storageBucket: process.env.FIRE_STORAGE_BUCKET_NAME,
-});
-//firebase storage bucket
-const bucket = admin.storage().bucket();
+const { MongoClient, ServerApiVersion } = require("mongodb");
+const { UploadFile } = require("./functions/UploadFile");
 
 app.use(cors());
 app.use(express.json());
@@ -51,44 +42,34 @@ async function run() {
       const images = await cursor.toArray();
       res.send(images);
     });
-    app.post("/images", upload.single("image"), (req, res) => {
-      if (!req.file) {
-        res.status(400).json({ error: "No file uploaded" });
-        return;
-      }
-      console.log("file recieved");
-      const filePath = req.file.path; // Path to the temporarily stored file
-      const fileName = req.file.originalname; // Original name of the uploaded file
 
-      const destination = "uploads/" + fileName; // Destination path in Firebase Storage
-      console.log("starting upload");
-      bucket.upload(
-        filePath,
-        {
-          destination: destination,
-          metadata: {
-            contentType: req.file.mimetype, // Set the content type based on the uploaded file
-          },
-        },
-        (err, uploadedFile) => {
-          if (err) {
-            console.error("Error uploading file:", err);
-            res.status(500).json({ error: "Failed to upload file" });
-            return;
-          }
-
-          const imageUrl = uploadedFile.publicUrl();
-          console.log(imageUrl);
-
-          // Delete the temporarily stored file
-          fs.unlinkSync(filePath);
-          res.json({ imageUrl: imageUrl });
+    app.post("/images", upload.single("image"), async (req, res) => {
+      try {
+        if (!req.file) {
+          return res.status(400).json({ error: "No file uploaded" });
         }
-      );
+        console.log("file received");
+        const file = req.file;
+        const { author, city, state, zip } = req.body;
+        let data = { author, city, state, zip };
 
-      console.log("upload finished");
+        const folderName = "uploads69";
+        const fileUrl = await UploadFile(file, folderName);
+        const formattedData = {
+          ...data,
+          fileUrl,
+        };
+        const result = await imagesCollection.insertOne(formattedData);
+        res.send(result);
+        console.log(formattedData);
+        console.log(`image URL: ${fileUrl}`);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send("Failed to upload wallpaper");
+      }
     });
-    //main error and final log
+
+    // Main error and final log
   } catch (error) {
     console.log(error);
   } finally {
