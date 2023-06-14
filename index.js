@@ -8,6 +8,7 @@ const upload = multer({ dest: "uploads/" }); // Temporarily store the uploaded f
 const port = process.env.port || 5000;
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const { UploadFile } = require("./functions/UploadFile");
+const { GenerateImage } = require("./functions/GenerateImage");
 
 app.use(cors());
 app.use(express.json());
@@ -62,6 +63,33 @@ const RunTheServer = async () => {
         const result = await imagesCollection.insertOne(formattedData);
         res.send(result);
         console.log(formattedData);
+        console.log(`image URL: ${fileUrl}`);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send("Failed to upload wallpaper");
+      }
+    });
+
+    app.post("/generate", upload.single("image"), async (req, res) => {
+      try {
+        if (!req.file) {
+          return res.status(400).json({ error: "No file uploaded" });
+        }
+        console.log("file received");
+        const file = req.file;
+        const { author, city, state, zip } = req.body;
+        let data = { author, city, state, zip };
+        const prompt = author;
+
+        const folderName = "uploads69";
+        const fileUrl = await GenerateImage(prompt);
+        const formattedData = {
+          ...data,
+          fileUrl,
+        };
+        const result = await imagesCollection.insertOne(formattedData);
+        res.send(result);
+        console.log(result);
         console.log(`image URL: ${fileUrl}`);
       } catch (err) {
         console.error(err);
